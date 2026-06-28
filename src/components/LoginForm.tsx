@@ -12,7 +12,11 @@ export default function LoginForm() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(
+    params.get("error") === "auth_callback"
+      ? "That link is invalid or has expired. Please request a new password reset."
+      : null
+  );
   const [loading, setLoading] = useState(false);
 
   async function onSubmit(e: React.FormEvent) {
@@ -52,11 +56,19 @@ export default function LoginForm() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            placeholder="you@learner.edu"
+            placeholder="you@learner.manipal.edu"
           />
         </div>
         <div>
-          <label className="label">Password</label>
+          <div className="flex items-center justify-between">
+            <label className="label">Password</label>
+            <Link
+              href="/forgot-password"
+              className="mb-1.5 text-xs text-[var(--brand-2)] hover:underline"
+            >
+              Forgot password?
+            </Link>
+          </div>
           <input
             type="password"
             className="input"

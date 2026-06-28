@@ -152,7 +152,7 @@ export default function RegisterForm() {
               value={f.learner_email}
               onChange={(e) => update("learner_email", e.target.value)}
               required
-              placeholder="you@learner.edu"
+              placeholder="you@learner.manipal..edu"
             />
             <p className="mt-1 text-xs text-muted">You&apos;ll log in with this.</p>
           </div>
