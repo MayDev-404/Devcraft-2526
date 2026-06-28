@@ -100,7 +100,7 @@ export default async function LandingPage() {
                 View problem statements
               </Link>
             </div>
-            <p className="eyebrow mt-8 flex items-center gap-2 text-muted">
+            <p className="eyebrow mt-13 flex items-center gap-2 text-muted">
               <span className="relative flex h-2 w-2">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--brand)] opacity-75" />
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-[var(--brand)]" />

@@ -19,7 +19,9 @@ export default function AuthLayout({
               priority
               className="h-9 w-9 rounded-full bg-white p-0.5"
             />
-            Dev<span className="text-gradient">Craft</span>
+            <span className="text-lg">
+              Dev<span className="text-gradient">Craft</span>
+            </span>
           </Link>
         </div>
       </header>
