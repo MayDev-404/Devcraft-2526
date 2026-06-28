@@ -1,16 +1,19 @@
 @import "tailwindcss";
 
 :root {
-  --background: #0a0a12;
-  --surface: #12121f;
-  --surface-2: #1a1a2e;
-  --foreground: #ededf2;
-  --muted: #9a9ab0;
-  --border: #262640;
-  --brand: #7c5cff;
-  --brand-2: #22d3ee;
+  /* Warm espresso base with a coral accent and ISTE teal as the cool pop */
+  --background: #15100e;
+  --surface: #1f1814;
+  --surface-2: #271e18;
+  --foreground: #f5eee6;
+  --muted: #b3a294;
+  --border: #352a22;
+
+  --brand: #ff6b5c; /* coral — primary accent / CTAs */
+  --brand-strong: #f2503f; /* deeper coral for solid fills */
+  --brand-2: #2dd4bf; /* ISTE-leaning teal — the cool counterpoint */
   --danger: #f87171;
-  --success: #34d399;
+  --success: #4ade80;
 }
 
 @theme inline {
@@ -25,7 +28,8 @@
   --color-danger: var(--danger);
   --color-success: var(--success);
   --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-display);
+  --font-mono: var(--font-mono);
 }
 
 body {
@@ -34,31 +38,103 @@ body {
   font-family: var(--font-sans), system-ui, sans-serif;
 }
 
-/* Reusable utility classes ------------------------------------------------ */
+/* Headings use the display face */
+h1,
+h2,
+h3,
+.font-display {
+  font-family: var(--font-display), var(--font-sans), sans-serif;
+  letter-spacing: -0.02em;
+}
+
+/* Monospaced eyebrows / labels / data */
+.mono {
+  font-family: var(--font-mono), monospace;
+}
+.eyebrow {
+  font-family: var(--font-mono), monospace;
+  @apply text-xs font-medium uppercase tracking-[0.25em] text-[var(--brand)];
+}
+
+/* Accent helpers --------------------------------------------------------- */
+.text-gradient {
+  background: linear-gradient(100deg, var(--brand), var(--brand-2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Reusable component classes --------------------------------------------- */
 .btn,
 .btn-primary,
 .btn-ghost {
-  @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+  @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
 }
 .btn-primary {
-  @apply text-white;
-  background: linear-gradient(135deg, var(--brand), #5b3df0);
+  @apply text-[#1a120d];
+  background: linear-gradient(120deg, var(--brand), var(--brand-strong));
+  box-shadow: 0 6px 24px -8px var(--brand);
 }
 .btn-primary:hover {
-  filter: brightness(1.1);
+  filter: brightness(1.07);
+  box-shadow: 0 10px 30px -8px var(--brand);
 }
 .btn-ghost {
-  @apply border border-[var(--border)] text-foreground hover:bg-[var(--surface-2)];
+  @apply border border-[var(--border)] bg-[var(--surface)]/60 text-foreground hover:border-[var(--brand)] hover:bg-[var(--surface-2)];
 }
 .card {
   @apply rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6;
 }
 .input {
-  @apply w-full rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-3.5 py-2.5 text-sm text-foreground outline-none transition placeholder:text-[var(--muted)] focus:border-[var(--brand)];
+  @apply w-full rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-3.5 py-2.5 text-sm text-foreground outline-none transition placeholder:text-[var(--muted)] focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand)]/20;
 }
 .label {
   @apply mb-1.5 block text-sm font-medium text-foreground;
 }
 .badge {
+  font-family: var(--font-mono), monospace;
   @apply inline-flex items-center rounded-full border border-[var(--border)] bg-[var(--surface-2)] px-3 py-1 text-xs font-medium text-muted;
+}
+
+/* Ambient teal glow used behind hero / accents */
+.glow {
+  background: radial-gradient(
+    closest-side,
+    color-mix(in oklab, var(--brand) 55%, transparent),
+    transparent
+  );
+}
+
+/* Floating animation for the hero's isometric chips */
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}
+.float {
+  animation: float 6s ease-in-out infinite;
+}
+.float-2 {
+  animation: float 7.5s ease-in-out infinite;
+  animation-delay: -2.5s;
+}
+.float-3 {
+  animation: float 5.5s ease-in-out infinite;
+  animation-delay: -1.2s;
+}
+
+/* Decorative outlined accent shapes scattered around the hero */
+.accent-square {
+  border: 2px solid color-mix(in oklab, var(--brand) 70%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
 }
