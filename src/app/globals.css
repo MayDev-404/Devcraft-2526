@@ -1,0 +1,64 @@
+@import "tailwindcss";
+
+:root {
+  --background: #0a0a12;
+  --surface: #12121f;
+  --surface-2: #1a1a2e;
+  --foreground: #ededf2;
+  --muted: #9a9ab0;
+  --border: #262640;
+  --brand: #7c5cff;
+  --brand-2: #22d3ee;
+  --danger: #f87171;
+  --success: #34d399;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-brand: var(--brand);
+  --color-brand-2: var(--brand-2);
+  --color-danger: var(--danger);
+  --color-success: var(--success);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+/* Reusable utility classes ------------------------------------------------ */
+.btn,
+.btn-primary,
+.btn-ghost {
+  @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+}
+.btn-primary {
+  @apply text-white;
+  background: linear-gradient(135deg, var(--brand), #5b3df0);
+}
+.btn-primary:hover {
+  filter: brightness(1.1);
+}
+.btn-ghost {
+  @apply border border-[var(--border)] text-foreground hover:bg-[var(--surface-2)];
+}
+.card {
+  @apply rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6;
+}
+.input {
+  @apply w-full rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-3.5 py-2.5 text-sm text-foreground outline-none transition placeholder:text-[var(--muted)] focus:border-[var(--brand)];
+}
+.label {
+  @apply mb-1.5 block text-sm font-medium text-foreground;
+}
+.badge {
+  @apply inline-flex items-center rounded-full border border-[var(--border)] bg-[var(--surface-2)] px-3 py-1 text-xs font-medium text-muted;
+}
