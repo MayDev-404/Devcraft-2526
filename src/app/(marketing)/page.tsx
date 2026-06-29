@@ -1,15 +1,17 @@
 import Link from "next/link";
+import Image from "next/image";
 import Countdown from "@/components/Countdown";
 import HeroArt from "@/components/HeroArt";
 import ProblemCarousel from "@/components/ProblemCarousel";
 import { createClient } from "@/lib/supabase/server";
-import { EVENT_START } from "@/lib/event";
+import { getSessionProfile } from "@/lib/auth";
+import { EVENT_START, WHATSAPP_GROUP_URL } from "@/lib/event";
 import type { ProblemStatement } from "@/lib/types";
 
 const highlights = [
-  { label: "Format", value: "Yet to be decided" },
+  { label: "Format", value: "Online" },
   { label: "Team size", value: "2 – 4 members" },
-  { label: "Tracks", value: "Yet to be decided" },
+  { label: "Tracks", value: "Multi Domain" },
   { label: "Prize pool", value: "₹10,000" },
 ];
 
@@ -37,6 +39,9 @@ const steps = [
 ];
 
 export default async function LandingPage() {
+  const session = await getSessionProfile();
+  const loggedIn = Boolean(session);
+
   let problems: ProblemStatement[] = [];
   try {
     const supabase = await createClient();
@@ -93,14 +98,20 @@ export default async function LandingPage() {
               fast.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
-              <Link href="/register" className="btn-primary">
-                Register now
-              </Link>
+              {loggedIn ? (
+                <Link href="/dashboard" className="btn-primary">
+                  Go to dashboard
+                </Link>
+              ) : (
+                <Link href="/register" className="btn-primary">
+                  Register now
+                </Link>
+              )}
               <Link href="/problems" className="btn-ghost">
                 View problem statements
               </Link>
             </div>
-            <p className="eyebrow mt-13 flex items-center gap-2 text-muted">
+            <p className="eyebrow mt-7 flex items-center gap-2 text-muted">
               <span className="relative flex h-2 w-2">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--brand)] opacity-75" />
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-[var(--brand)]" />
@@ -140,9 +151,15 @@ export default async function LandingPage() {
           <div className="card flex flex-col items-center gap-6 bg-gradient-to-br from-[var(--surface-2)] to-[var(--surface)] py-10 text-center">
             <p className="eyebrow text-muted">Kicks off in</p>
             <Countdown target={EVENT_START} />
-            <Link href="/register" className="btn-primary">
-              Reserve your spot
-            </Link>
+            {loggedIn ? (
+              <Link href="/dashboard" className="btn-primary">
+                Go to dashboard
+              </Link>
+            ) : (
+              <Link href="/register" className="btn-primary">
+                Reserve your spot
+              </Link>
+            )}
           </div>
         </div>
       </section>
@@ -216,9 +233,57 @@ export default async function LandingPage() {
               Turn your idea into a shipped product.
             </p>
           </div>
-          <Link href="/register" className="btn-primary shrink-0">
-            Register now
-          </Link>
+          {loggedIn ? (
+            <Link href="/dashboard" className="btn-primary shrink-0">
+              Go to dashboard
+            </Link>
+          ) : (
+            <Link href="/register" className="btn-primary shrink-0">
+              Register now
+            </Link>
+          )}
+        </div>
+      </section>
+
+      {/* Join the WhatsApp group ------------------------------------------ */}
+      <section className="mx-auto max-w-6xl px-4 pb-20">
+        <div className="relative overflow-hidden rounded-2xl border border-[var(--border)] bg-gradient-to-br from-[var(--surface-2)] to-[var(--surface)] p-8 sm:p-10">
+          <div className="glow pointer-events-none absolute -left-16 -top-16 h-56 w-56 opacity-25" />
+          <div className="relative grid items-center gap-8 sm:grid-cols-[auto_1fr]">
+            {/* QR code */}
+            <div className="mx-auto rounded-2xl bg-white p-3 shadow-lg sm:mx-0">
+              <Image
+                src="/qr.jpeg"
+                alt="WhatsApp group QR code"
+                width={200}
+                height={200}
+                className="h-44 w-44 rounded-lg object-contain"
+              />
+            </div>
+
+            <div className="text-center sm:text-left">
+              <p className="eyebrow">Stay in the loop</p>
+              <h2 className="mt-3 text-3xl font-bold sm:text-4xl">
+                Join the group for <span className="text-gradient">updates</span>
+              </h2>
+              <p className="mt-4 max-w-md text-muted">
+                Scan the QR code, or tap the button below to join our WhatsApp
+                group for announcements, deadlines, and important updates about
+                DevCraft.
+              </p>
+              <a
+                href={WHATSAPP_GROUP_URL}
+                target="_blank"
+                rel="noreferrer"
+                className="btn-primary mt-7 inline-flex"
+              >
+                <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4">
+                  <path d="M.06 24l1.68-6.13A11.86 11.86 0 0 1 .14 11.9C.14 5.33 5.49 0 12.06 0a11.8 11.8 0 0 1 8.4 3.49 11.76 11.76 0 0 1 3.48 8.42c0 6.57-5.35 11.91-11.92 11.91a11.93 11.93 0 0 1-5.7-1.45L.06 24Zm6.6-3.8c1.67.99 3.27 1.58 5.4 1.58 5.46 0 9.9-4.43 9.9-9.88 0-5.46-4.42-9.89-9.89-9.89-5.46 0-9.9 4.43-9.9 9.88 0 2.24.66 3.92 1.75 5.68l-.99 3.63 3.73-.99Zm11.4-5.55c-.07-.12-.27-.2-.57-.34-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.96-.94 1.16-.17.2-.35.22-.65.07-.3-.15-1.25-.46-2.38-1.47-.88-.78-1.47-1.75-1.65-2.05-.17-.3-.02-.46.13-.61.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.08-.15-.67-1.62-.92-2.21-.24-.58-.49-.5-.67-.51l-.57-.01c-.2 0-.52.07-.79.37-.27.3-1.04 1.01-1.04 2.48 0 1.46 1.06 2.87 1.21 3.07.15.2 2.1 3.2 5.08 4.48.71.31 1.26.49 1.69.63.71.22 1.36.19 1.87.12.57-.09 1.76-.72 2-1.41.25-.7.25-1.29.18-1.42Z" />
+                </svg>
+                Join WhatsApp group
+              </a>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -268,13 +333,26 @@ export default async function LandingPage() {
         <div className="relative overflow-hidden rounded-2xl border border-[var(--border)] bg-gradient-to-br from-[var(--surface-2)] to-[var(--surface)] py-14 text-center">
           <div className="glow pointer-events-none absolute left-1/2 top-0 -z-10 h-72 w-72 -translate-x-1/2 opacity-25" />
           <h2 className="text-4xl font-bold">Ready to compete?</h2>
-          <p className="mx-auto mt-4 max-w-lg text-muted">
-            Grab your registration number, round up your team, and lock in your
-            spot.
-          </p>
-          <Link href="/register" className="btn-primary mt-7">
-            Create your account
-          </Link>
+          {loggedIn ? (
+            <>
+              <p className="mx-auto mt-4 max-w-lg text-muted">
+                Round up your team, pick a problem statement, and start building.
+              </p>
+              <Link href="/dashboard" className="btn-primary mt-7">
+                Go to dashboard
+              </Link>
+            </>
+          ) : (
+            <>
+              <p className="mx-auto mt-4 max-w-lg text-muted">
+                Grab your registration number, round up your team, and lock in your
+                spot.
+              </p>
+              <Link href="/register" className="btn-primary mt-7">
+                Create your account
+              </Link>
+            </>
+          )}
         </div>
       </section>
     </>
