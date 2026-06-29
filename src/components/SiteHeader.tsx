@@ -25,8 +25,8 @@ export default async function SiteHeader() {
             priority
             className="h-9 w-9 rounded-full bg-white p-0.5"
           />
-          <span className="text-lg">
-            Dev<span className="text-[var(--brand-2)]">Craft</span>
+          <span className="font-display text-lg">
+            Dev<span className="text-gradient">Craft</span>
           </span>
         </Link>
 
