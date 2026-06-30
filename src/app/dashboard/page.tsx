@@ -10,7 +10,7 @@ export const metadata = { title: "Dashboard · DevCraft" };
 export default async function DashboardPage() {
   const { user, profile } = await requireProfile();
   const supabase = await createClient();
-  const { submissions_open } = await getSettings();
+  const { submissions_create_open, submissions_edit_open } = await getSettings();
 
   // Profile should exist (created on signup). Guard just in case.
   if (!profile) {
@@ -88,7 +88,8 @@ export default async function DashboardPage() {
           submission={submission}
           problem={problem}
           problemList={problemList ?? []}
-          submissionsOpen={submissions_open}
+          createOpen={submissions_create_open}
+          editOpen={submissions_edit_open}
         />
       ) : (
         <CreateJoinTeam />

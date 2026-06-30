@@ -26,19 +26,25 @@ function toLocalInput(iso: string | null): string {
   )}:${p(d.getMinutes())}`;
 }
 
+type SettingsInitial = Pick<
+  AppSettings,
+  "submissions_create_open" | "submissions_edit_open" | "event_start"
+>;
+
 export default function AdminSettings({
   initial,
 }: {
-  initial: Pick<AppSettings, "submissions_open" | "event_start">;
+  initial: SettingsInitial;
 }) {
   const router = useRouter();
   const supabase = createClient();
 
-  const [submissionsOpen, setSubmissionsOpen] = useState(initial.submissions_open);
+  const [createOpen, setCreateOpen] = useState(initial.submissions_create_open);
+  const [editOpen, setEditOpen] = useState(initial.submissions_edit_open);
   const [eventStart, setEventStart] = useState(toLocalInput(initial.event_start));
   const [savedStart, setSavedStart] = useState(toLocalInput(initial.event_start));
 
-  const [togglingSub, setTogglingSub] = useState(false);
+  const [busyKey, setBusyKey] = useState<string | null>(null);
   const [savingDate, setSavingDate] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -54,22 +60,25 @@ export default function AdminSettings({
     if (err) throw err;
   }
 
-  async function toggleSubmissions() {
-    const next = !submissionsOpen;
-    setTogglingSub(true);
+  async function toggle(
+    key: "submissions_create_open" | "submissions_edit_open",
+    current: boolean,
+    setLocal: (v: boolean) => void,
+    label: string
+  ) {
+    const next = !current;
+    setBusyKey(key);
     setError(null);
     setNotice(null);
     try {
-      await update({ submissions_open: next });
-      setSubmissionsOpen(next);
-      setNotice(
-        next ? "Submissions are now open." : "Submissions are now closed."
-      );
+      await update({ [key]: next } as Partial<AppSettings>);
+      setLocal(next);
+      setNotice(`${label} is now ${next ? "open" : "closed"}.`);
       router.refresh();
     } catch (e) {
       setError(errMessage(e, "Could not update setting."));
     } finally {
-      setTogglingSub(false);
+      setBusyKey(null);
     }
   }
 
@@ -83,9 +92,7 @@ export default function AdminSettings({
       const iso = eventStart ? new Date(eventStart).toISOString() : null;
       await update({ event_start: iso });
       setSavedStart(eventStart);
-      setNotice(
-        iso ? "Hackathon start time saved." : "Start time cleared."
-      );
+      setNotice(iso ? "Hackathon start time saved." : "Start time cleared.");
       router.refresh();
     } catch (e) {
       setError(errMessage(e, "Could not save the date."));
@@ -107,44 +114,46 @@ export default function AdminSettings({
         </p>
       )}
 
-      {/* Submissions toggle */}
-      <div className="card">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h3 className="font-semibold">Submissions</h3>
-            <p className="mt-1 text-sm text-muted">
-              When closed, team leaders cannot create or edit their project
-              submission. Enforced in the database, not just the UI.
-            </p>
-            <p className="mt-3">
-              <span
-                className={`badge ${
-                  submissionsOpen
-                    ? "border-[var(--success)]/40 text-[var(--success)]"
-                    : "text-[var(--danger)]"
-                }`}
-              >
-                {submissionsOpen ? "Open" : "Closed"}
-              </span>
-            </p>
-          </div>
-          <button
-            onClick={toggleSubmissions}
-            disabled={togglingSub}
-            role="switch"
-            aria-checked={submissionsOpen}
-            aria-label="Toggle submissions"
-            className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition ${
-              submissionsOpen ? "bg-[var(--brand)]" : "bg-[var(--surface-2)]"
-            } disabled:opacity-50`}
-          >
-            <span
-              className={`inline-block h-5 w-5 transform rounded-full bg-white transition ${
-                submissionsOpen ? "translate-x-6" : "translate-x-1"
-              }`}
-            />
-          </button>
+      <div className="card space-y-5">
+        <div>
+          <h3 className="font-semibold">Submissions</h3>
+          <p className="mt-1 text-sm text-muted">
+            Control submissions in two stages. Both are enforced in the database,
+            not just the UI.
+          </p>
         </div>
+
+        <ToggleRow
+          title="Allow creating submissions"
+          description="When open, team leaders can submit their project for the first time (teams of 2+ only)."
+          on={createOpen}
+          busy={busyKey === "submissions_create_open"}
+          onToggle={() =>
+            toggle(
+              "submissions_create_open",
+              createOpen,
+              setCreateOpen,
+              "Creating submissions"
+            )
+          }
+        />
+
+        <div className="border-t border-[var(--border)]" />
+
+        <ToggleRow
+          title="Allow editing submissions"
+          description="When open, team leaders can edit a submission they've already made."
+          on={editOpen}
+          busy={busyKey === "submissions_edit_open"}
+          onToggle={() =>
+            toggle(
+              "submissions_edit_open",
+              editOpen,
+              setEditOpen,
+              "Editing submissions"
+            )
+          }
+        />
       </div>
 
       {/* Event start date/time */}
@@ -184,6 +193,56 @@ export default function AdminSettings({
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+function ToggleRow({
+  title,
+  description,
+  on,
+  busy,
+  onToggle,
+}: {
+  title: string;
+  description: string;
+  on: boolean;
+  busy: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <div className="flex items-start justify-between gap-4">
+      <div>
+        <div className="flex items-center gap-2">
+          <p className="font-medium">{title}</p>
+          <span
+            className={`badge ${
+              on
+                ? "border-[var(--success)]/40 text-[var(--success)]"
+                : "text-[var(--danger)]"
+            }`}
+          >
+            {on ? "Open" : "Closed"}
+          </span>
+        </div>
+        <p className="mt-1 text-sm text-muted">{description}</p>
+      </div>
+      <button
+        onClick={onToggle}
+        disabled={busy}
+        role="switch"
+        aria-checked={on}
+        aria-label={title}
+        className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition ${
+          on ? "bg-[var(--brand)]" : "bg-[var(--surface-2)]"
+        } disabled:opacity-50`}
+      >
+        <span
+          className={`inline-block h-5 w-5 transform rounded-full bg-white transition ${
+            on ? "translate-x-6" : "translate-x-1"
+          }`}
+        />
+      </button>
     </div>
   );
 }

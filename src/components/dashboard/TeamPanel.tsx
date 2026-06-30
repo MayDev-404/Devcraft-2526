@@ -27,7 +27,8 @@ export default function TeamPanel({
   submission,
   problem,
   problemList,
-  submissionsOpen,
+  createOpen,
+  editOpen,
 }: {
   team: Team;
   members: Profile[];
@@ -36,7 +37,8 @@ export default function TeamPanel({
   submission: Submission | null;
   problem: ProblemStatement | null;
   problemList: ProblemStatement[];
-  submissionsOpen: boolean;
+  createOpen: boolean;
+  editOpen: boolean;
 }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -169,7 +171,8 @@ export default function TeamPanel({
         currentUserId={currentUserId}
         submission={submission}
         hasProblem={!!team.problem_statement_id}
-        submissionsOpen={submissionsOpen}
+        createOpen={createOpen}
+        editOpen={editOpen}
         memberCount={members.length}
       />
 
@@ -272,7 +275,8 @@ function SubmissionSection({
   currentUserId,
   submission,
   hasProblem,
-  submissionsOpen,
+  createOpen,
+  editOpen,
   memberCount,
 }: {
   isLeader: boolean;
@@ -280,7 +284,8 @@ function SubmissionSection({
   currentUserId: string;
   submission: Submission | null;
   hasProblem: boolean;
-  submissionsOpen: boolean;
+  createOpen: boolean;
+  editOpen: boolean;
   memberCount: number;
 }) {
   const router = useRouter();
@@ -319,28 +324,31 @@ function SubmissionSection({
 
     setSaving(true);
     const supabase = createClient();
-    const { error: err } = await supabase.from("submissions").upsert(
-      {
-        team_id: teamId,
-        title: form.title.trim(),
-        description: form.description.trim(),
-        repo_url: form.repo_url.trim(),
-        demo_url: form.demo_url.trim(),
-        submitted_by: currentUserId,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "team_id" }
-    );
+    const payload = {
+      title: form.title.trim(),
+      description: form.description.trim(),
+      repo_url: form.repo_url.trim(),
+      demo_url: form.demo_url.trim(),
+      submitted_by: currentUserId,
+      updated_at: new Date().toISOString(),
+    };
+    // Insert when creating the first submission, update when editing — this
+    // maps to the separate create/edit RLS policies in the database.
+    const { error: err } = submission
+      ? await supabase.from("submissions").update(payload).eq("team_id", teamId)
+      : await supabase.from("submissions").insert({ team_id: teamId, ...payload });
     setSaving(false);
     if (err) return setError(rpcErrorMessage(err.message));
     setSaved(true);
     router.refresh();
   }
 
-  // Leaders may edit only while submissions are open AND the team meets the
-  // minimum size. Everyone else (and leaders otherwise) see a read-only view.
+  // Creating the first submission is gated by createOpen; editing an existing
+  // one by editOpen. Both also require the team to meet the minimum size.
+  const hasSubmission = !!submission;
+  const gateOpen = hasSubmission ? editOpen : createOpen;
   const teamTooSmall = memberCount < MIN_TEAM_SIZE;
-  const canEdit = isLeader && submissionsOpen && !teamTooSmall;
+  const canEdit = isLeader && gateOpen && !teamTooSmall;
 
   return (
     <div className="card">
@@ -348,24 +356,31 @@ function SubmissionSection({
         <h3 className="text-lg font-semibold">Submission</h3>
         <span
           className={`badge ${
-            submissionsOpen
+            gateOpen
               ? "border-[var(--success)]/40 text-[var(--success)]"
               : "text-[var(--danger)]"
           }`}
         >
-          {submissionsOpen ? "Open" : "Closed"}
+          {hasSubmission
+            ? editOpen
+              ? "Editing open"
+              : "Editing closed"
+            : createOpen
+              ? "Open"
+              : "Closed"}
         </span>
       </div>
 
       {!canEdit ? (
         <div className="mt-3 space-y-3">
-          {isLeader && !submissionsOpen && (
+          {isLeader && !gateOpen && (
             <p className="rounded-lg border border-[var(--danger)]/30 bg-[var(--danger)]/5 px-3 py-2 text-sm text-muted">
-              Submissions are currently closed. You&apos;ll be able to add or edit
-              your project here once the organisers open them.
+              {hasSubmission
+                ? "Editing submissions is currently closed. Your submission below is locked."
+                : "Submissions aren't open yet. You'll be able to submit your project here once the organisers open submissions."}
             </p>
           )}
-          {isLeader && submissionsOpen && teamTooSmall && (
+          {isLeader && gateOpen && teamTooSmall && (
             <p className="rounded-lg border border-[var(--brand)]/30 bg-[var(--brand)]/5 px-3 py-2 text-sm text-muted">
               You need at least {MIN_TEAM_SIZE} team members before you can submit.
               Share your Team ID to add{" "}

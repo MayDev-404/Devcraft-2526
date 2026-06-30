@@ -55,7 +55,8 @@ export type AllowedUser = {
 
 export type AppSettings = {
   id: boolean;
-  submissions_open: boolean;
+  submissions_create_open: boolean;
+  submissions_edit_open: boolean;
   event_start: string | null;
   updated_at: string;
 };
