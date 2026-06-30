@@ -10,6 +10,13 @@ const MAP: Record<string, string> = {
     "As leader, transfer leadership or remove members before leaving.",
   NOT_TEAM_LEADER_OR_MEMBER: "You can't manage that member.",
   CANNOT_REMOVE_SELF: "You can't remove yourself — use 'Leave team' instead.",
+  TEAM_TOO_SMALL:
+    "Your team needs at least 2 members before you can submit.",
+  SUBMISSIONS_CLOSED: "Submissions are currently closed.",
+  TITLE_REQUIRED: "Please add a project title.",
+  DESCRIPTION_REQUIRED: "Please add a project description.",
+  INVALID_REPO_URL: "Enter a valid repository URL (must start with https://).",
+  INVALID_DEMO_URL: "Enter a valid demo URL (must start with https://) or leave it blank.",
 };
 
 export function rpcErrorMessage(raw: string | undefined): string {

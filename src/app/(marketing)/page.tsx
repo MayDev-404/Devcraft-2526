@@ -5,7 +5,8 @@ import HeroArt from "@/components/HeroArt";
 import ProblemCarousel from "@/components/ProblemCarousel";
 import { createClient } from "@/lib/supabase/server";
 import { getSessionProfile } from "@/lib/auth";
-import { EVENT_START, WHATSAPP_GROUP_URL } from "@/lib/event";
+import { getSettings } from "@/lib/settings";
+import { WHATSAPP_GROUP_URL } from "@/lib/event";
 import type { ProblemStatement } from "@/lib/types";
 
 const highlights = [
@@ -41,6 +42,7 @@ const steps = [
 export default async function LandingPage() {
   const session = await getSessionProfile();
   const loggedIn = Boolean(session);
+  const { event_start } = await getSettings();
 
   let problems: ProblemStatement[] = [];
   try {
@@ -150,7 +152,7 @@ export default async function LandingPage() {
 
           <div className="card flex flex-col items-center gap-6 bg-gradient-to-br from-[var(--surface-2)] to-[var(--surface)] py-10 text-center">
             <p className="eyebrow text-muted">Kicks off in</p>
-            <Countdown target={EVENT_START} />
+            <Countdown target={event_start} />
             {loggedIn ? (
               <Link href="/dashboard" className="btn-primary">
                 Go to dashboard

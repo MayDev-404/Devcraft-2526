@@ -1,5 +1,6 @@
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { getSettings } from "@/lib/settings";
 import CreateJoinTeam from "@/components/dashboard/CreateJoinTeam";
 import TeamPanel from "@/components/dashboard/TeamPanel";
 import type { Profile, ProblemStatement, Submission, Team } from "@/lib/types";
@@ -9,6 +10,7 @@ export const metadata = { title: "Dashboard · DevCraft" };
 export default async function DashboardPage() {
   const { user, profile } = await requireProfile();
   const supabase = await createClient();
+  const { submissions_open } = await getSettings();
 
   // Profile should exist (created on signup). Guard just in case.
   if (!profile) {
@@ -86,6 +88,7 @@ export default async function DashboardPage() {
           submission={submission}
           problem={problem}
           problemList={problemList ?? []}
+          submissionsOpen={submissions_open}
         />
       ) : (
         <CreateJoinTeam />

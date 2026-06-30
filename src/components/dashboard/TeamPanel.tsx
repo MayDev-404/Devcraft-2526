@@ -7,6 +7,18 @@ import { rpcErrorMessage } from "@/lib/errors";
 import { MAX_TEAM_SIZE, MIN_TEAM_SIZE } from "@/lib/types";
 import type { Profile, ProblemStatement, Submission, Team } from "@/lib/types";
 
+// Only accept http(s) URLs in the submission link fields.
+function isValidUrl(raw: string): boolean {
+  const v = raw.trim();
+  if (!v) return false;
+  try {
+    const u = new URL(v);
+    return u.protocol === "http:" || u.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 export default function TeamPanel({
   team,
   members,
@@ -15,6 +27,7 @@ export default function TeamPanel({
   submission,
   problem,
   problemList,
+  submissionsOpen,
 }: {
   team: Team;
   members: Profile[];
@@ -23,6 +36,7 @@ export default function TeamPanel({
   submission: Submission | null;
   problem: ProblemStatement | null;
   problemList: ProblemStatement[];
+  submissionsOpen: boolean;
 }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -155,6 +169,8 @@ export default function TeamPanel({
         currentUserId={currentUserId}
         submission={submission}
         hasProblem={!!team.problem_statement_id}
+        submissionsOpen={submissionsOpen}
+        memberCount={members.length}
       />
 
       {/* Leave team */}
@@ -256,12 +272,16 @@ function SubmissionSection({
   currentUserId,
   submission,
   hasProblem,
+  submissionsOpen,
+  memberCount,
 }: {
   isLeader: boolean;
   teamId: string;
   currentUserId: string;
   submission: Submission | null;
   hasProblem: boolean;
+  submissionsOpen: boolean;
+  memberCount: number;
 }) {
   const router = useRouter();
   const [form, setForm] = useState({
@@ -275,31 +295,83 @@ function SubmissionSection({
   const [saved, setSaved] = useState(false);
 
   async function save() {
-    setSaving(true);
-    setError(null);
     setSaved(false);
+    setError(null);
+
+    // Client-side validation (also enforced in the DB via trigger + RLS).
+    if (memberCount < MIN_TEAM_SIZE) {
+      return setError(
+        `Your team needs at least ${MIN_TEAM_SIZE} members before you can submit.`
+      );
+    }
+    if (!form.title.trim()) {
+      return setError("Please add a project title.");
+    }
+    if (!form.description.trim()) {
+      return setError("Please add a project description.");
+    }
+    if (!isValidUrl(form.repo_url)) {
+      return setError("Enter a valid repository URL (must start with https://).");
+    }
+    if (!isValidUrl(form.demo_url)) {
+      return setError("Enter a valid demo URL (must start with https://).");
+    }
+
+    setSaving(true);
     const supabase = createClient();
     const { error: err } = await supabase.from("submissions").upsert(
       {
         team_id: teamId,
-        ...form,
+        title: form.title.trim(),
+        description: form.description.trim(),
+        repo_url: form.repo_url.trim(),
+        demo_url: form.demo_url.trim(),
         submitted_by: currentUserId,
         updated_at: new Date().toISOString(),
       },
       { onConflict: "team_id" }
     );
     setSaving(false);
-    if (err) return setError(err.message);
+    if (err) return setError(rpcErrorMessage(err.message));
     setSaved(true);
     router.refresh();
   }
 
+  // Leaders may edit only while submissions are open AND the team meets the
+  // minimum size. Everyone else (and leaders otherwise) see a read-only view.
+  const teamTooSmall = memberCount < MIN_TEAM_SIZE;
+  const canEdit = isLeader && submissionsOpen && !teamTooSmall;
+
   return (
     <div className="card">
-      <h3 className="text-lg font-semibold">Submission</h3>
+      <div className="flex items-center justify-between gap-3">
+        <h3 className="text-lg font-semibold">Submission</h3>
+        <span
+          className={`badge ${
+            submissionsOpen
+              ? "border-[var(--success)]/40 text-[var(--success)]"
+              : "text-[var(--danger)]"
+          }`}
+        >
+          {submissionsOpen ? "Open" : "Closed"}
+        </span>
+      </div>
 
-      {!isLeader ? (
-        <div className="mt-3">
+      {!canEdit ? (
+        <div className="mt-3 space-y-3">
+          {isLeader && !submissionsOpen && (
+            <p className="rounded-lg border border-[var(--danger)]/30 bg-[var(--danger)]/5 px-3 py-2 text-sm text-muted">
+              Submissions are currently closed. You&apos;ll be able to add or edit
+              your project here once the organisers open them.
+            </p>
+          )}
+          {isLeader && submissionsOpen && teamTooSmall && (
+            <p className="rounded-lg border border-[var(--brand)]/30 bg-[var(--brand)]/5 px-3 py-2 text-sm text-muted">
+              You need at least {MIN_TEAM_SIZE} team members before you can submit.
+              Share your Team ID to add{" "}
+              {MIN_TEAM_SIZE - memberCount} more.
+            </p>
+          )}
           {submission?.title ? (
             <div className="space-y-1 text-sm">
               <p className="font-medium">{submission.title}</p>
@@ -310,7 +382,9 @@ function SubmissionSection({
             </div>
           ) : (
             <p className="text-sm text-muted">
-              Your team leader hasn&apos;t added a submission yet.
+              {isLeader
+                ? "No submission added yet."
+                : "Your team leader hasn't added a submission yet."}
             </p>
           )}
         </div>
@@ -322,7 +396,9 @@ function SubmissionSection({
             </p>
           )}
           <div>
-            <label className="label">Project title</label>
+            <label className="label">
+              Project title <span className="text-[var(--danger)]">*</span>
+            </label>
             <input
               className="input"
               value={form.title}
@@ -331,7 +407,9 @@ function SubmissionSection({
             />
           </div>
           <div>
-            <label className="label">Description</label>
+            <label className="label">
+              Description <span className="text-[var(--danger)]">*</span>
+            </label>
             <textarea
               className="input min-h-24"
               value={form.description}
@@ -341,22 +419,36 @@ function SubmissionSection({
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label className="label">Repository URL</label>
+              <label className="label">
+                Repository URL <span className="text-[var(--danger)]">*</span>
+              </label>
               <input
+                type="url"
+                inputMode="url"
                 className="input"
                 value={form.repo_url}
                 onChange={(e) => setForm({ ...form, repo_url: e.target.value })}
                 placeholder="https://github.com/…"
               />
+              <p className="mt-1 text-xs text-muted">
+                Must be a valid link starting with https://
+              </p>
             </div>
             <div>
-              <label className="label">Demo / video URL</label>
+              <label className="label">
+                Demo / video URL <span className="text-[var(--danger)]">*</span>
+              </label>
               <input
+                type="url"
+                inputMode="url"
                 className="input"
                 value={form.demo_url}
                 onChange={(e) => setForm({ ...form, demo_url: e.target.value })}
                 placeholder="https://…"
               />
+              <p className="mt-1 text-xs text-muted">
+                Must be a valid link starting with https://
+              </p>
             </div>
           </div>
           {error && <p className="text-sm text-[var(--danger)]">{error}</p>}
@@ -364,7 +456,11 @@ function SubmissionSection({
             <p className="text-sm text-[var(--success)]">Submission saved.</p>
           )}
           <button onClick={save} disabled={saving} className="btn-primary">
-            {saving ? "Saving…" : "Save submission"}
+            {saving
+              ? "Saving…"
+              : submission
+                ? "Update submission"
+                : "Submit solution"}
           </button>
         </div>
       )}

@@ -53,5 +53,12 @@ export type AllowedUser = {
   created_at: string;
 };
 
+export type AppSettings = {
+  id: boolean;
+  submissions_open: boolean;
+  event_start: string | null;
+  updated_at: string;
+};
+
 export const MAX_TEAM_SIZE = 4;
 export const MIN_TEAM_SIZE = 2;

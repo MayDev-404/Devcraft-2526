@@ -8,6 +8,7 @@ const tabs = [
   { href: "/admin/teams", label: "Manage Teams" },
   { href: "/admin/allowed", label: "Allow-list" },
   { href: "/admin/problems", label: "Problem Statements" },
+  { href: "/admin/settings", label: "Settings" },
 ];
 
 export default function AdminTabs() {
